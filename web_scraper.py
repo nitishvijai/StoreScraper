@@ -1,17 +1,46 @@
+# libraries
+
 import requests
 from bs4 import BeautifulSoup
+from selenium import webdriver
+from requests_html import HTMLSession
+
+# global variables
+
+headers = {
+    'Host': 'www.amazon.com',
+    'User-Agent': 'Mozilla/5.0 (Windows NT 6.3; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/54.0.2840.71 Safari/537.36',
+    'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+    'Accept-Language': 'en-US,en;q=0.5',
+    'Accept-Encoding': 'gzip, deflate, br',
+    'Connection': 'keep-alive',
+    'Upgrade-Insecure-Requests': '1',
+    'TE': 'Trailers'
+}
+
+driver = webdriver.Edge()
+
+# main code
+
+search = input('Enter the item you want to search for: ')
+print()
+print('Searching for ' + search)
+
+# eBay
+
+search = search.replace(' ', '+')
 
 print('Gathering eBay listings...')
-URL = 'https://www.ebay.com/sch/i.html?_from=R40&_trksid=p2334524.m570.l1313.TR12.TRC2.A0.H0.Xsamsung+galaxy+note+9.TRS0&_nkw=samsung+galaxy+note+9&_sacat=0&LH_TitleDesc=0&_osacat=0&_odkw=samsung+galaxy+s9+plus'
-page = requests.get(URL)
+URL_e = 'https://www.ebay.com/sch/i.html?_from=R40&_trksid=p2380057.m570.l1313.TR12.TRC2.A0.H0.Xnitish.TRS0&_nkw=' + search
+page = requests.get(URL_e)
 
 soup = BeautifulSoup(page.content, 'html.parser')
-ebay_results = soup.find(id='mainContent')
+results = soup.find(id='mainContent')
 
-ebay_listings = ebay_results.find_all('li', class_='s-item')
+listings = results.find_all('li', class_='s-item')
 
 runs = 0
-for listing in ebay_listings:
+for listing in listings:
     if runs >= 1: break
     item_element = listing.find('h3', class_='s-item__title')
     item_price = listing.find('span', class_='s-item__price')
@@ -24,75 +53,98 @@ for listing in ebay_listings:
     runs += 1
 
 ebay_price = item_price.text.strip()
+ebay_price = ebay_price.replace('$','')
+ebay_price = float(ebay_price)
 
-print('Gathering Sears listings...')
+session = HTMLSession()
 
-URL_s = 'https://www.sears.com/search=samsung%20galaxy%20note%209'
-page_s = requests.get(URL_s)
+# Amazon
 
-soup_s = BeautifulSoup(page_s.content, 'html.parser')
+print('Gathering Amazon listings...')
 
-sears_results = soup_s.find(id='cards-holder')
+URL = 'https://www.amazon.com/s?k=' + search
 
-sears_listings = sears_results.find_all('div', class_='card-container card-border')
+driver.get(URL)
+page = requests.get(URL, headers=headers)
+
+soup = BeautifulSoup(driver.page_source, 'html.parser')
 
 runs = 0
-for listing in sears_listings:
+results = soup.findAll('span', attrs={'class': 'a-size-base-plus a-color-base a-text-normal'})
+for listing in results:
     if runs >= 1: break
-    itemTag = soup_s.find('h3', class_='card-title')
-    item_element = itemTag.a['title']
-    item_price = listing.find('span', class_='card-price ng-binding ng-scope card-price-orig')
-    if None in (item_element, item_price):
+    print(soup.select_one('span.a-size-base-plus').get_text())
+    runs += 1
+
+runs = 0
+results = soup.findAll('span', attrs={'class': 'a-offscreen'})
+for listing in results:
+    if runs >= 1: break
+    element = soup.select_one('span.a-offscreen')
+    if None in element:
         continue
-    print(item_element)
-    print(item_price.text.strip())
-    print()
-    print()
-    runs += 1    
-
-sears_price = item_price.text.strip()
-
-print ('Gathering Sam\'s Club listings...')
-
-URL_sc = 'https://www.samsclub.com/s/samsung%20galaxy%20note%209'
-page_sc = requests.get(URL_sc)
-
-soup_sc = BeautifulSoup(page_sc.content, 'html.parser')
-
-sams_results = soup_sc.find('div', class_='sc-infinite-loader sc-product-cards analytics')
-
-sams_listings = sams_results.find_all('div', class_="sc-product-card sc-product-card-grid sc-product-card-has-flag")
-
-runs = 0
-for listing in sams_listings:
-    if runs >= 1: break
-    item_element = listing.find('div', class_="sc-product-card-title")
-    itemTag = listing.find('span', class_="Price-group")
-    if None in (item_element, itemTag, item_price):
-       continue
-    print(item_element.text.strip())
-    print(itemTag.attrs.get('title').replace('current price: ', ''))
+    print(element.get_text())
     print()
     print()
     runs += 1
 
-sams_price = item_price.text.strip()
+amazon_price = element.get_text()
+amazon_price = amazon_price.replace('$','')
+amazon_price = float(amazon_price)
+
+# Best Buy
+
+print ('Gathering Best Buy listings...')
+
+URL_bb = 'https://www.bestbuy.com/site/searchpage.jsp?st=' + search
+
+driver.get(URL_bb)
+page = requests.get(URL_bb, headers=headers)
+
+soup = BeautifulSoup(driver.page_source, 'html.parser')
+
+runs = 0
+results = soup.findAll('h4', attrs={'class': 'sku-header'})
+for listing in results:
+    if runs >= 1: break
+    print(soup.select_one('h4.sku-header').get_text())
+    runs += 1
+
+runs = 0
+results = soup.findAll('div', attrs={'class': 'priceView-hero-price priceView-customer-price'})
+for listing in results:
+    if runs >= 1: break
+    element = soup.select_one('div.priceView-customer-price > span:first-child')
+    if None in element:
+        continue
+    print(element.get_text())
+    print()
+    print()
+    runs += 1
+
+bb_price = element.get_text()
+bb_price = bb_price.replace('$','')
+bb_price = float(bb_price)
+
+# Final price comparison
 
 print('Comparing the three prices...')
 
 elected_link = ''
 elected_price = 0.00
 
-if (sears_price >= sams_price) and (sears_price >= ebay_price):
-    elected_link = URL_s
-    elected_price = sears_price
-elif (sams_price >= sears_price) and (sams_price >= ebay_price):
-    elected_link = URL_sc
-    elected_price = sams_price
-else:
-    elected_link = URL
+if (ebay_price <= amazon_price) and (ebay_price <= bb_price):
     elected_price = ebay_price
+    elected_link = URL_e
+elif (amazon_price <= ebay_price) and (amazon_price <= bb_price):
+    elected_price = amazon_price
+    elected_link = URL
+elif (bb_price <= ebay_price) and (bb_price <= amazon_price):
+    elected_price = bb_price
+    elected_link = URL_bb
 
 print('Here\'s the link to the lowest price. Have fun!')
 print(elected_link)
-print(elected_price)
+print('$' + str(elected_price))
+
+# Execution halts here
