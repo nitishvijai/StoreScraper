@@ -3,6 +3,7 @@
 import requests
 from bs4 import BeautifulSoup
 from selenium import webdriver
+from selenium.webdriver.firefox.firefox_binary import FirefoxBinary
 from requests_html import HTMLSession
 
 # global variables
@@ -18,7 +19,10 @@ headers = {
     'TE': 'Trailers'
 }
 
-driver = webdriver.Edge()
+binary = FirefoxBinary('C:\\Program Files\\Mozilla Firefox\\firefox.exe')
+options = webdriver.FirefoxOptions()
+options.add_argument('-headless')
+driver = webdriver.Firefox(firefox_binary=binary, executable_path=r'C:\\BrowserDriver\geckodriver.exe', firefox_options=options)
 
 # main code
 
