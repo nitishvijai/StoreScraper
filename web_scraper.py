@@ -22,7 +22,7 @@ headers = {
 binary = FirefoxBinary('C:\\Program Files\\Mozilla Firefox\\firefox.exe')
 options = webdriver.FirefoxOptions()
 options.add_argument('-headless')
-driver = webdriver.Firefox(firefox_binary=binary, executable_path=r'C:\\BrowserDriver\geckodriver.exe', firefox_options=options)
+driver = webdriver.Firefox(firefox_binary=binary, executable_path=r'C:\\BrowserDriver\geckodriver.exe', options=options)
 
 # main code
 
@@ -60,7 +60,6 @@ ebay_price = item_price.text.strip()
 ebay_price = ebay_price.replace('$','')
 ebay_price = float(ebay_price)
 
-session = HTMLSession()
 
 # Amazon
 
@@ -69,15 +68,15 @@ print('Gathering Amazon listings...')
 URL = 'https://www.amazon.com/s?k=' + search
 
 driver.get(URL)
-page = requests.get(URL, headers=headers)
+# page = requests.get(URL, headers=headers)
 
 soup = BeautifulSoup(driver.page_source, 'html.parser')
 
 runs = 0
-results = soup.findAll('span', attrs={'class': 'a-size-base-plus a-color-base a-text-normal'})
+results = soup.findAll('span', attrs={'class': 'a-size-medium a-color-base a-text-normal'})
 for listing in results:
     if runs >= 1: break
-    print(soup.select_one('span.a-size-base-plus').get_text())
+    print(soup.select_one('span.a-size-medium').get_text())
     runs += 1
 
 runs = 0
